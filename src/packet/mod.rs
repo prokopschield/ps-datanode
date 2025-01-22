@@ -1,10 +1,8 @@
-pub mod body;
 pub mod constants;
 pub mod error;
 pub mod head;
 pub mod utils;
 
-use body::PacketBody;
 use constants::{PACKET_PREFIX_LENGTH, PROTOCOL_VERSION};
 use error::PacketError;
 use head::PacketHead;
@@ -29,7 +27,7 @@ where
         CheckBytes<Strategy<Validator<ArchiveValidator<'a>, SharedValidator>, rkyv::rancor::Error>>,
 {
     pub head: PacketHead,
-    pub body: PacketBody<T>,
+    pub body: T,
 }
 
 impl<T> Packet<T>
@@ -111,7 +109,7 @@ mod tests {
         let rkyv_serialized = rkyv::to_bytes::<Error>(&packet)?;
         let rkyv_accessed = rkyv::access::<Archived<(u32, u32)>, Error>(&rkyv_serialized)?;
 
-        assert_eq!(&accessed.body.inner, rkyv_accessed, "Should be identical");
+        assert_eq!(&accessed.body, rkyv_accessed, "Should be identical");
 
         Ok(())
     }
