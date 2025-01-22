@@ -2,6 +2,7 @@ pub mod body;
 pub mod constants;
 pub mod error;
 pub mod head;
+pub mod resolver;
 pub mod types;
 pub mod utils;
 
