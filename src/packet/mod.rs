@@ -1,8 +1,11 @@
+pub mod body;
 pub mod constants;
 pub mod error;
 pub mod head;
+pub mod types;
 pub mod utils;
 
+use body::PacketBody;
 use constants::{PACKET_PREFIX_LENGTH, PROTOCOL_VERSION};
 use error::PacketError;
 use head::PacketHead;
@@ -81,13 +84,17 @@ where
 
 impl<T> From<T> for Packet<T>
 where
+    T: PacketBody,
     for<'a> T: Archive + Serialize<HighSerializer<AlignedVec, ArenaHandle<'a>, Error>>,
     for<'a> <T as Archive>::Archived:
         CheckBytes<Strategy<Validator<ArchiveValidator<'a>, SharedValidator>, rkyv::rancor::Error>>,
 {
     fn from(value: T) -> Self {
         Self {
-            head: PacketHead {},
+            head: PacketHead {
+                packet_type: T::packet_type(),
+                serial_number: None,
+            },
             body: value.into(),
         }
     }
@@ -95,13 +102,33 @@ where
 
 #[cfg(test)]
 mod tests {
-    use rkyv::{rancor::Error, Archived};
+    use ps_str::Utf8Encoder;
+    use rkyv::{rancor::Error, Archive, Archived, Serialize};
+
+    use crate::packet::body::PacketBody;
 
     use super::{error::PacketError, Packet};
 
+    #[derive(Archive, Clone, Serialize)]
+    struct Message {
+        pub foo: u64,
+        pub bar: String,
+    }
+
+    impl PacketBody for Message {
+        fn packet_type() -> super::types::PacketType {
+            120
+        }
+    }
+
     #[test]
     fn simple() -> Result<(), PacketError> {
-        let packet = Packet::from(0x1122334455667788u64);
+        let message = Message {
+            foo: 0x1122334455667788u64,
+            bar: "Hello, world!".to_utf8_string(),
+        };
+
+        let packet = Packet::from(message.clone());
 
         let serialized = packet.serialize()?;
         let accessed = Packet::<(u32, u32)>::access(&serialized)?;
