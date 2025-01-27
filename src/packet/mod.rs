@@ -44,12 +44,12 @@ where
         let serialized = rkyv::to_bytes::<Error>(self)?;
         let length = serialized.len() + PACKET_PREFIX_LENGTH;
 
-        let mut buffer = Buffer::alloc(length);
+        let mut buffer = Buffer::with_capacity(length)?;
 
-        buffer[0..4].copy_from_slice(&(length as u32).to_le_bytes());
-        buffer[4..8].copy_from_slice(&PROTOCOL_VERSION.to_le_bytes());
-        buffer[8..16].copy_from_slice(&checksum(&serialized).to_le_bytes());
-        buffer[16..].copy_from_slice(&serialized);
+        buffer.extend_from_slice(&(length as u32).to_le_bytes())?;
+        buffer.extend_from_slice(&PROTOCOL_VERSION.to_le_bytes())?;
+        buffer.extend_from_slice(&checksum(&serialized).to_le_bytes())?;
+        buffer.extend_from_slice(&serialized)?;
 
         Ok(buffer)
     }

@@ -1,10 +1,13 @@
 use std::array::TryFromSliceError;
 
+use ps_buffer::BufferError;
 use rkyv::rancor::Error;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum PacketError {
+    #[error(transparent)]
+    BufferError(#[from] BufferError),
     #[error(transparent)]
     Rancor(#[from] Error),
     #[error(transparent)]
